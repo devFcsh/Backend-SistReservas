@@ -6,17 +6,13 @@ var builder = WebApplication.CreateBuilder(args);
 // ==========================================================================
 // 1.  CONEXIÓN MYSQL (cambiar contraseña 'root')
 // ==========================================================================
-//string connectionString = "Server=localhost;Database=control_laboratorio;Uid=root;Pwd=root;";
-string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+string? connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
 // Si es nula (significa que estás en la pc local)
 if (string.IsNullOrEmpty(connectionString))
 {
     connectionString = "Server=localhost;Database=control_laboratorio;Uid=root;Pwd=root;";
 }
-
-
-
 
 // Configuración de CORS
 builder.Services.AddCors(options =>
@@ -63,14 +59,16 @@ app.MapPost("/api/entrada", async (EntradaDto entrada) =>
             return Results.BadRequest(new { error = "El alumno ya cuenta con un registro de entrada activo." });
         }
 
-        string insertSql = @"INSERT INTO reservas (matricula, nombre, apellido, carrera, laboratorio) 
-                             VALUES (@matricula, @nombre, @apellido, @carrera, 'L002')";
+        // AGREGADO: Columna 'equipo' en el INSERT
+        string insertSql = @"INSERT INTO reservas (matricula, nombre, apellido, carrera, laboratorio, equipo) 
+                             VALUES (@matricula, @nombre, @apellido, @carrera, 'L002', @equipo)";
         
         using var cmd = new MySqlCommand(insertSql, connection);
         cmd.Parameters.AddWithValue("@matricula", entrada.Matricula);
         cmd.Parameters.AddWithValue("@nombre", entrada.Nombre);
         cmd.Parameters.AddWithValue("@apellido", entrada.Apellido);
         cmd.Parameters.AddWithValue("@carrera", entrada.Carrera);
+        cmd.Parameters.AddWithValue("@equipo", entrada.Equipo); // AGREGADO: Parámetro para el equipo
 
         await cmd.ExecuteNonQueryAsync();
 
@@ -111,7 +109,7 @@ app.MapPut("/api/salida", async (SalidaDto salida) =>
         // ------------------------------------------------------------------
         DateTime horaSalida = DateTime.Now;
         int minutosTotales = (int)(horaSalida - horaInicio).TotalMinutes;
-        if (minutosTotales < 1) minutosTotales = 1; // Por cortesía en pruebas rápidas
+        if (minutosTotales < 1) minutosTotales = 1; 
 
         string textoTiempo;
 
@@ -119,13 +117,10 @@ app.MapPut("/api/salida", async (SalidaDto salida) =>
         {
             int horas = minutosTotales / 60;
             int minutosRestantes = minutosTotales % 60;
-            
-            // Si el residuo es 0 escribe "2 h", si no, escribe "2 h 15 min"
             textoTiempo = minutosRestantes == 0 ? $"{horas} h" : $"{horas} h {minutosRestantes} min";
         }
         else
         {
-            // Menor a una hora escribe "45 min"
             textoTiempo = $"{minutosTotales} min";
         }
         // ------------------------------------------------------------------
@@ -136,7 +131,7 @@ app.MapPut("/api/salida", async (SalidaDto salida) =>
 
         using var updateCmd = new MySqlCommand(updateSql, connection);
         updateCmd.Parameters.AddWithValue("@hora_salida", horaSalida);
-        updateCmd.Parameters.AddWithValue("@tiempo_promedio", textoTiempo); // Guarda el texto inteligente ("2 h 15 min")
+        updateCmd.Parameters.AddWithValue("@tiempo_promedio", textoTiempo); 
         updateCmd.Parameters.AddWithValue("@id", idRegistro);
 
         await updateCmd.ExecuteNonQueryAsync();
@@ -161,7 +156,8 @@ app.MapGet("/api/reporte", async () =>
         using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
 
-        string selectSql = "SELECT nombre, apellido, matricula, carrera, hora_inicio, hora_salida, tiempo_promedio FROM reservas ORDER BY hora_inicio DESC";
+        // AGREGADO: Se incluyó 'equipo' en la consulta SQL
+        string selectSql = "SELECT nombre, apellido, matricula, carrera, equipo, hora_inicio, hora_salida, tiempo_promedio FROM reservas ORDER BY hora_inicio DESC";
         using var cmd = new MySqlCommand(selectSql, connection);
         using var reader = await cmd.ExecuteReaderAsync();
 
@@ -173,9 +169,10 @@ app.MapGet("/api/reporte", async () =>
                 { "apellido", reader.IsDBNull(reader.GetOrdinal("apellido")) ? "" : reader.GetString("apellido") },
                 { "matricula", reader.IsDBNull(reader.GetOrdinal("matricula")) ? "" : reader.GetString("matricula") },
                 { "carrera", reader.IsDBNull(reader.GetOrdinal("carrera")) ? "" : reader.GetString("carrera") },
+                // AGREGADO: Mapeo de la columna equipo hacia el objeto JSON enviado al frontend
+                { "equipo", reader.IsDBNull(reader.GetOrdinal("equipo")) ? "N/A" : reader.GetString("equipo") },
                 { "hora_inicio", reader.GetDateTime("hora_inicio").ToString("yyyy-MM-dd HH:mm:ss") },
                 { "hora_salida", reader.IsDBNull(reader.GetOrdinal("hora_salida")) ? "En uso" : reader.GetDateTime("hora_salida").ToString("yyyy-MM-dd HH:mm:ss") },
-                // Leemos directamente como String ya que MySQL ahora guarda textos con las unidades
                 { "tiempo_promedio", reader.IsDBNull(reader.GetOrdinal("tiempo_promedio")) ? "N/A" : reader.GetString("tiempo_promedio") }
             };
             listaReporte.Add(fila);
@@ -191,5 +188,6 @@ app.MapGet("/api/reporte", async () =>
 
 app.Run();
 
-public record EntradaDto(string Matricula, string Nombre, string Apellido, string Carrera);
+// AGREGADO: Se añade 'string Equipo' en el Record para recibir el dato de React
+public record EntradaDto(string Matricula, string Nombre, string Apellido, string Carrera, string Equipo);
 public record SalidaDto(string Matricula);

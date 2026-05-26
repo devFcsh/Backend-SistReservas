@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj": {}
+    "C:\\Users\\Majo\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj": {
+    "C:\\Users\\Majo\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
+        "projectUniqueName": "C:\\Users\\Majo\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
         "projectName": "BackendReservas",
-        "projectPath": "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
-        "packagesPath": "C:\\Users\\Estudiante\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\obj\\",
+        "projectPath": "C:\\Users\\Majo\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
+        "packagesPath": "C:\\Users\\Majo\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Majo\\Videos\\Backend-SistReservas\\BackendReservas\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Estudiante\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Majo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -76,7 +82,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
