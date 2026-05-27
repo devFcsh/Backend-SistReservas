@@ -72,29 +72,13 @@ namespace Backend_SistReservas.Controllers
             DateTime horaActual = DateTime.Now;
             ultimaReserva.HoraSalida = horaActual;
             
-            // Cálculo del tiempo transcurrido en el sistema
-            TimeSpan diferencia = horaActual - ultimaReserva.HoraInicio;
-            int minutosTotales = (int)diferencia.TotalMinutes;
-            if (minutosTotales < 1) minutosTotales = 1; // Margen de seguridad para salidas instantáneas
-
-            string textoTiempo;
-            if (minutosTotales >= 60)
-            {
-                int horas = minutosTotales / 60;
-                int minutosRestantes = minutosTotales % 60;
-                textoTiempo = minutosRestantes == 0 ? $"{horas} h" : $"{horas} h {minutosRestantes} min";
-            }
-            else
-            {
-                textoTiempo = $"{minutosTotales} min";
-            }
-            
-            ultimaReserva.TiempoPromedio = textoTiempo; 
+            // Uso del método privado
+            ultimaReserva.TiempoPromedio = FormatearTiempo(ultimaReserva.HoraInicio, horaActual);
 
             _context.Reservas.Update(ultimaReserva);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = $"Salida registrada con éxito. Tiempo de uso: {textoTiempo}." });
+            return Ok(new { message = $"Salida registrada con éxito. Tiempo de uso: {ultimaReserva.TiempoPromedio}." });
         }
 
         // ==========================================================================
@@ -114,7 +98,8 @@ namespace Backend_SistReservas.Controllers
                     Fecha = r.HoraInicio.ToString("yyyy-MM-dd"),
                     HoraInicio = r.HoraInicio.ToString("HH:mm:ss"),
                     HoraSalida = r.HoraSalida.HasValue ? r.HoraSalida.Value.ToString("HH:mm:ss") : "En uso",
-                    TiempoPromedio = r.TiempoPromedio ?? "N/A"
+                    TiempoPromedio = r.TiempoPromedio ?? "N/A",
+                    r.Periodo
                 })
                 .ToListAsync();
 
@@ -122,7 +107,7 @@ namespace Backend_SistReservas.Controllers
         }
 
         // ==========================================================================
-        // GET: api/alumno/{matricula} -> Autocompletado/Historial veloz por alumno
+        // GET: api/alumno/{matricula} -> Autocompletado/Historial por alumno
         // ==========================================================================
         [HttpGet("alumno/{matricula}")]
         public async Task<IActionResult> ObtenerAlumnoPorMatricula(string matricula)
@@ -144,6 +129,10 @@ namespace Backend_SistReservas.Controllers
             return Ok(new { encontrado = false });
         }
 
+
+        // ==========================================================================
+        // GET: estado de equipos
+        // ==========================================================================
         [HttpGet("equipos-estado")]
         public async Task<IActionResult> ObtenerEstadoEquipos()
         {
@@ -154,7 +143,90 @@ namespace Backend_SistReservas.Controllers
                 .ToListAsync();
 
             return Ok(ocupados);
-}
+        }
+
+        // ==========================================================================
+        // POST: Si se esta en clase, todas los equipos cambian a OCUPADOS
+        // ==========================================================================
+
+        [HttpPost("en-clase")]
+        public async Task<IActionResult> MarcarTodosComoOcupados()
+        {
+            // Obtener equipos que ya están ocupados
+            var ocupados = await _context.Reservas
+                .Where(r => r.HoraSalida == null)
+                .Select(r => r.Equipo)
+                .ToListAsync();
+
+            // Crear lista de equipos disponibles
+            var todosLosEquipos = Enumerable.Range(1, 46).Select(i => $"Equipo {i}");
+            var disponibles = todosLosEquipos.Except(ocupados);
+
+            // Registrar entrada "En Clase" para cada disponible
+            foreach (var equipo in disponibles)
+            {
+                _context.Reservas.Add(new Reserva {
+                    Nombre = "En Clase",
+                    Apellido = "N/A",
+                    Matricula = "000000000",
+                    Carrera = "Reservado por Profesor",
+                    Periodo = "N/A",
+                    Equipo = equipo,
+                    Laboratorio = "L002",
+                    HoraInicio = DateTime.Now,
+                    HoraSalida = null
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "En clase:Todos los equipos han sido marcados como ocupados. " });
+        }
+
+
+        // ==========================================================================
+        // PUT: una vez acabada la clase, regresar todos los equipos a DISPONIBLE
+        // ==========================================================================
+        [HttpPut("finalizar-clase")]
+        public async Task<IActionResult> FinalizarClase()
+        {
+            // Buscamos todas las reservas abiertas de la matrícula genérica "000000000"
+            var reservasEnClase = await _context.Reservas
+                .Where(r => r.Matricula == "000000000" && r.HoraSalida == null)
+                .ToListAsync();
+
+
+            DateTime horaActual = DateTime.Now;
+
+
+            foreach (var r in reservasEnClase)
+            {
+                r.HoraSalida = horaActual;
+                // Uso del método privado
+                r.TiempoPromedio = FormatearTiempo(r.HoraInicio, horaActual);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Fin de clase! Todos los equipos han sido liberados." });
+        }
+
+        // ==========================================================================
+        // MÉTODO PRIVADO : para calcular el tiempo promedio
+        // ==========================================================================
+        private string FormatearTiempo(DateTime inicio, DateTime fin)
+        {
+            int minutosTotales = (int)(fin - inicio).TotalMinutes;
+            if (minutosTotales < 1) minutosTotales = 1;
+
+            if (minutosTotales >= 60)
+            {
+                int horas = minutosTotales / 60;
+                int minutosRestantes = minutosTotales % 60;
+                return minutosRestantes == 0 ? $"{horas} h" : $"{horas} h {minutosRestantes} min";
+            }
+            return $"{minutosTotales} min";
+        }
+
+
 
 
     }

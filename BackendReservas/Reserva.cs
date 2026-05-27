@@ -42,5 +42,8 @@ namespace Backend_SistReservas.Models
         
         [Column("tiempo_promedio")] 
         public string? TiempoPromedio { get; set; } // Soporta VARCHAR(20) en MySQL
+
+        [Column("periodo")]
+        public string Periodo { get; set; }= string.Empty;
     }
 }
