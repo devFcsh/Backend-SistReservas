@@ -143,6 +143,20 @@ namespace Backend_SistReservas.Controllers
 
             return Ok(new { encontrado = false });
         }
+
+        [HttpGet("equipos-estado")]
+        public async Task<IActionResult> ObtenerEstadoEquipos()
+        {
+            // Obtenemos solo las reservas activas (sin hora de salida)
+            var ocupados = await _context.Reservas
+                .Where(r => r.HoraSalida == null)
+                .Select(r => r.Equipo)
+                .ToListAsync();
+
+            return Ok(ocupados);
+}
+
+
     }
 
     // Objeto de transferencia de datos de salida para el tipado estricto de la petición PUT
@@ -150,4 +164,7 @@ namespace Backend_SistReservas.Controllers
     {
         public string Matricula { get; set; } = string.Empty;
     }
+
+
+    
 }

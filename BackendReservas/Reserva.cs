@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend_SistReservas.Models
 {
-    [Table("reservas")] // Nombre exacto de tu tabla en MySQL
+    [Table("reservas")] // Nombre exacto de la tabla en MySQL
     public class Reserva
     {
         [Key]
