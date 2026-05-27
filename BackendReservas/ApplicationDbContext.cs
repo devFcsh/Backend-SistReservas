@@ -1,8 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Backend_SistReservas.Models;
 
-public class ApplicationDbContext : DbContext
+namespace Backend_SistReservas.Data
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    public class ApplicationDbContext : DbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        {
+        }
 
-    public DbSet<Reserva> Reservas { get; set; }
+        public DbSet<Reserva> Reservas { get; set; } = null!;
+    }
 }
