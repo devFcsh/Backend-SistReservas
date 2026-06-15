@@ -42,6 +42,7 @@ namespace Backend_SistReservas.Controllers
             entrada.HoraInicio = DateTime.Now;
             entrada.HoraSalida = null;
             entrada.TiempoPromedio = null;
+            entrada.Año = DateTime.Now.Year;   
 
             _context.Reservas.Add(entrada);
             await _context.SaveChangesAsync();
@@ -99,7 +100,8 @@ namespace Backend_SistReservas.Controllers
                     HoraInicio = r.HoraInicio.ToString("HH:mm:ss"),
                     HoraSalida = r.HoraSalida.HasValue ? r.HoraSalida.Value.ToString("HH:mm:ss") : "En uso",
                     TiempoPromedio = r.TiempoPromedio ?? "N/A",
-                    r.Periodo
+                    r.Periodo ,
+                    r.Año
                 })
                 .ToListAsync();
 
@@ -174,7 +176,9 @@ namespace Backend_SistReservas.Controllers
                     Equipo = equipo,
                     Laboratorio = "L002",
                     HoraInicio = DateTime.Now,
-                    HoraSalida = null
+                    HoraSalida = null,
+                    Año = DateTime.Now.Year,
+
                 });
             }
 

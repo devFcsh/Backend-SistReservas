@@ -45,5 +45,8 @@ namespace Backend_SistReservas.Models
 
         [Column("periodo")]
         public string Periodo { get; set; }= string.Empty;
+
+        [Column("año")]
+        public int Año { get; set; }
     }
 }
