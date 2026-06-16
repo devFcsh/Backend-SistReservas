@@ -19,6 +19,8 @@ namespace Backend_SistReservas.Controllers
             _context = context;
         }
 
+       
+
         // ==========================================================================
         // POST: api/entrada -> Registrar nueva reserva de laboratorio
         // ==========================================================================
@@ -150,10 +152,20 @@ namespace Backend_SistReservas.Controllers
         // ==========================================================================
         // POST: Si se esta en clase, todas los equipos cambian a OCUPADOS
         // ==========================================================================
+         public class EnClaseRequest 
+        {
+            public string Docente { get; set; } = string.Empty;
+            public string Periodo { get; set; } = string.Empty;
+        }
 
         [HttpPost("en-clase")]
-        public async Task<IActionResult> MarcarTodosComoOcupados()
+        public async Task<IActionResult> MarcarTodosComoOcupados ([FromBody] EnClaseRequest request)
         {
+
+            if (string.IsNullOrEmpty(request.Docente)) request.Docente = "Profesor";
+            if (string.IsNullOrEmpty(request.Periodo)) request.Periodo = "I PAO";
+
+        
             // Obtener equipos que ya están ocupados
             var ocupados = await _context.Reservas
                 .Where(r => r.HoraSalida == null)
@@ -171,8 +183,8 @@ namespace Backend_SistReservas.Controllers
                     Nombre = "En Clase",
                     Apellido = "N/A",
                     Matricula = "000000000",
-                    Carrera = "Reservado por Profesor",
-                    Periodo = "N/A",
+                    Carrera = $"Reservado por {request.Docente}",
+                    Periodo = request.Periodo,
                     Equipo = equipo,
                     Laboratorio = "L002",
                     HoraInicio = DateTime.Now,
@@ -183,7 +195,7 @@ namespace Backend_SistReservas.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "En clase:Todos los equipos han sido marcados como ocupados. " });
+            return Ok(new { message = "En clase: Todos los equipos han sido marcados como ocupados. " });
         }
 
 
