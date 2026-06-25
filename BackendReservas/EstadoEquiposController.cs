@@ -30,13 +30,43 @@ namespace Backend_SistReservas.Controllers
         // ==========================================================================
         private static readonly Dictionary<string, string> EquiposIp = new()
         {
-            { "Equipo 1", "127.0.0.1" },   // Prueba: debería dar "naranja" (encendida)
-            { "Equipo 2", "8.8.8.8" },     // Prueba: debería dar "naranja" (encendida)
-            { "Equipo 3", "192.0.2.1" },   // Prueba: debería dar "morado" (apagada)
-
-            // "Equipo 4"  => "192.168.1.4",
-            // ...
-            // "Equipo 46" => "192.168.1.46",
+            { "Equipo 1",  "200.126.2.70" },
+            { "Equipo 2",  "200.126.2.71" },
+            { "Equipo 3",  "200.126.2.72" },
+            { "Equipo 4",  "200.126.2.73" },
+            { "Equipo 5",  "200.126.2.74" },
+            { "Equipo 6",  "200.126.2.75" },
+            { "Equipo 7",  "200.126.2.76" },
+            { "Equipo 8",  "200.126.2.77" },
+            { "Equipo 9",  "200.126.2.78" },
+            { "Equipo 10", "200.126.2.79" },
+            { "Equipo 11", "200.126.2.80" },
+            { "Equipo 12", "200.126.2.81" },
+            { "Equipo 13", "200.126.2.82" },
+            { "Equipo 14", "200.126.2.83" },
+            { "Equipo 15", "200.126.2.84" },
+            { "Equipo 16", "200.126.2.85" },
+            { "Equipo 17", "200.126.2.86" },
+            { "Equipo 18", "200.126.2.87" },
+            { "Equipo 19", "200.126.2.88" },
+            { "Equipo 20", "200.126.2.89" },
+            { "Equipo 21", "200.126.2.90" },
+            { "Equipo 22", "200.126.2.91" },
+            { "Equipo 23", "200.126.2.92" },
+            { "Equipo 24", "200.126.2.93" },
+            { "Equipo 25", "200.126.2.94" },
+            { "Equipo 26", "200.126.2.95" },
+            { "Equipo 27", "200.126.2.96" },
+            { "Equipo 28", "200.126.2.97" },
+            { "Equipo 29", "200.126.2.98" },
+            { "Equipo 30", "200.126.2.99" },
+            { "Equipo 31", "200.126.2.100" },
+            { "Equipo 32", "200.126.2.101" },
+            { "Equipo 33", "200.126.2.102" },
+            { "Equipo 34", "200.126.2.103" },
+            { "Equipo 35", "200.126.2.104" },
+            { "Equipo 36", "200.126.2.105" },
+            { "Equipo 37", "200.126.2.106" }
         };
 
         public EstadoEquiposController(PingService pingService)
