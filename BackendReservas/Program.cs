@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Backend_SistReservas.Data;
+using Backend_SistReservas.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<PingService>();
 
 var app = builder.Build();
 
