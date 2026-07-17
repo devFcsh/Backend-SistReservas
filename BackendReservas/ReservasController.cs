@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend_SistReservas.Data;
 using Backend_SistReservas.Models;
+using Backend_SistReservas.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,24 +14,74 @@ namespace Backend_SistReservas.Controllers
     public class ReservasController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly EquiposCatalogoService _catalogo;
+        private static readonly KeyedAsyncLock Bloqueos = new();
 
-        public ReservasController(ApplicationDbContext context)
+        public ReservasController(ApplicationDbContext context, EquiposCatalogoService catalogo)
         {
             _context = context;
+            _catalogo = catalogo;
         }
-
-       
 
         // ==========================================================================
         // POST: api/entrada -> Registrar nueva reserva de laboratorio
+        //
+        // Todas las reglas de negocio se validan aquí en el backend (fuente de
+        // verdad), sin importar si la petición viene del formulario de React o
+        // llega manipulada directamente a la API:
+        //   - Matrícula: exactamente 9 dígitos numéricos.
+        //   - Nombre / Apellido: solo letras (con tildes/ñ) y espacios.
+        //   - El equipo debe existir, estar colocado (activo), tener IP y estar
+        //     encendido según el último ping (estado == "Disponible").
+        //   - Ni la matrícula ni el equipo pueden tener ya una reserva activa.
         // ==========================================================================
         [HttpPost("entrada")]
         public async Task<IActionResult> RegistrarEntrada([FromBody] Reserva entrada)
         {
-            if (entrada == null) 
+            if (entrada == null)
                 return BadRequest(new { error = "Los datos de ingreso enviados no son válidos." });
 
-            // Validación de concurrencia: Evita que se dupliquen registros activos
+            if (!ValidacionesHelper.EsMatriculaValida(entrada.Matricula))
+                return BadRequest(new { error = "La matrícula debe contener exactamente 9 dígitos numéricos." });
+
+            if (!ValidacionesHelper.EsNombreValido(entrada.Nombre))
+                return BadRequest(new { error = "El nombre solo puede contener letras y espacios." });
+
+            if (!ValidacionesHelper.EsNombreValido(entrada.Apellido))
+                return BadRequest(new { error = "El apellido solo puede contener letras y espacios." });
+
+            if (string.IsNullOrWhiteSpace(entrada.Equipo))
+                return BadRequest(new { error = "Debe seleccionar un equipo." });
+
+            entrada.Matricula = entrada.Matricula.Trim();
+            entrada.Nombre = entrada.Nombre.Trim();
+            entrada.Apellido = entrada.Apellido.Trim();
+            entrada.Equipo = entrada.Equipo.Trim();
+
+            // Bloqueo en memoria por equipo + por matrícula (en ese orden fijo,
+            // para no arriesgar un deadlock entre dos peticiones cruzadas).
+            // Esto serializa entradas concurrentes para el MISMO equipo o la
+            // MISMA matrícula, sin depender de ningún candado a nivel de base
+            // de datos (el catálogo de equipos ya no vive en una tabla).
+            using var _lockEquipo = await Bloqueos.AcquireAsync($"equipo:{entrada.Equipo}");
+            using var _lockMatricula = await Bloqueos.AcquireAsync($"matricula:{entrada.Matricula}");
+
+            var equipo = _catalogo.ObtenerPorNombre(entrada.Equipo);
+
+            if (equipo == null)
+            {
+                return BadRequest(new { error = $"El equipo '{entrada.Equipo}' no existe en el catálogo del laboratorio." });
+            }
+
+            bool equipoOcupado = await _context.Reservas
+                .AnyAsync(r => r.Equipo == entrada.Equipo && r.HoraSalida == null);
+
+            if (!EquipoEstadoHelper.EsReservable(equipo, equipoOcupado))
+            {
+                string estadoActual = EquipoEstadoHelper.CalcularEstado(equipo, equipoOcupado);
+                return BadRequest(new { error = $"El equipo '{entrada.Equipo}' no está disponible para reservar (estado: {estadoActual})." });
+            }
+
             bool tieneEntradaActiva = await _context.Reservas
                 .AnyAsync(r => r.Matricula == entrada.Matricula && r.HoraSalida == null);
 
@@ -44,7 +95,7 @@ namespace Backend_SistReservas.Controllers
             entrada.HoraInicio = DateTime.Now;
             entrada.HoraSalida = null;
             entrada.TiempoPromedio = null;
-            entrada.Año = DateTime.Now.Year;   
+            entrada.Año = DateTime.Now.Year;
 
             _context.Reservas.Add(entrada);
             await _context.SaveChangesAsync();
@@ -135,7 +186,9 @@ namespace Backend_SistReservas.Controllers
 
 
         // ==========================================================================
-        // GET: estado de equipos
+        // GET: estado de equipos (lista simple de nombres ocupados; se mantiene
+        // por compatibilidad con el frontend existente). Para el estado completo
+        // (Disponible/Ocupado/No disponible/No colocado) usar GET /api/equipos.
         // ==========================================================================
         [HttpGet("equipos-estado")]
         public async Task<IActionResult> ObtenerEstadoEquipos()
@@ -150,7 +203,8 @@ namespace Backend_SistReservas.Controllers
         }
 
         // ==========================================================================
-        // POST: Si se esta en clase, todas los equipos cambian a OCUPADOS
+        // POST: Si se esta en clase, todas los equipos REALMENTE reservables
+        // (colocados, con IP y encendidos) cambian a OCUPADOS.
         // ==========================================================================
          public class EnClaseRequest 
         {
@@ -172,9 +226,14 @@ namespace Backend_SistReservas.Controllers
                 .Select(r => r.Equipo)
                 .ToListAsync();
 
-            // Crear lista de equipos disponibles
-            var todosLosEquipos = Enumerable.Range(1, 46).Select(i => $"Equipo {i}");
-            var disponibles = todosLosEquipos.Except(ocupados);
+            // Catálogo dinámico (en memoria): solo equipos realmente reservables
+            // ahora mismo (colocados, con IP registrada y respondiendo al ping).
+            var todosLosEquiposReservables = _catalogo.ObtenerTodos()
+                .Where(e => e.Activo && !string.IsNullOrWhiteSpace(e.Ip) && e.Encendido)
+                .Select(e => e.Nombre)
+                .ToList();
+
+            var disponibles = todosLosEquiposReservables.Except(ocupados);
 
             // Registrar entrada "En Clase" para cada disponible
             foreach (var equipo in disponibles)
@@ -195,7 +254,7 @@ namespace Backend_SistReservas.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "En clase: Todos los equipos han sido marcados como ocupados. " });
+            return Ok(new { message = "En clase: Todos los equipos disponibles han sido marcados como ocupados. " });
         }
 
 

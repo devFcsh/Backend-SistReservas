@@ -1346,19 +1346,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Estudiante\\.nuget\\packages\\": {}
+    "C:\\Users\\Usuario\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
+      "projectUniqueName": "C:\\Users\\Usuario\\Downloads\\New folder\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
       "projectName": "BackendReservas",
-      "projectPath": "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
-      "packagesPath": "C:\\Users\\Estudiante\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Estudiante\\Videos\\Backend-SistReservas\\BackendReservas\\obj\\",
+      "projectPath": "C:\\Users\\Usuario\\Downloads\\New folder\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
+      "packagesPath": "C:\\Users\\Usuario\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Usuario\\Downloads\\New folder\\Backend-SistReservas\\BackendReservas\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Estudiante\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Usuario\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -1420,7 +1420,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.315/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
