@@ -74,27 +74,16 @@ namespace Backend_SistReservas.Controllers
         [HttpGet("equipos/disponibles")]
         public async Task<IActionResult> ObtenerDisponibles()
         {
-            var equipos = _catalogo.ObtenerTodos()
-                .Where(e => e.Activo && !string.IsNullOrWhiteSpace(e.Ip) && e.Encendido);
+            var equipos = _catalogo.ObtenerTodos();
+            var (ocupados, _) = await ObtenerNombresOcupados();
 
-            var (ocupados, huboError) = await ObtenerNombresOcupados();
-
+            // Misma regla que usa POST /api/entrada (EquipoEstadoHelper.EsReservable),
+            // para que el <select> del frontend nunca ofrezca un equipo que luego
+            // el backend vaya a rechazar.
             var disponibles = equipos
-                .Where(e => !ocupados.Contains(e.Nombre))
+                .Where(e => EquipoEstadoHelper.EsReservable(e, ocupados.Contains(e.Nombre)))
                 .Select(e => new { e.Id, e.Nombre })
                 .ToList();
-
-            if (huboError)
-            {
-                // Si no se puede confirmar qué está ocupado, por seguridad NO se
-                // ofrece ningún equipo para reservar (mejor bloquear que permitir
-                // una doble reserva por no poder verificar).
-                return Ok(new
-                {
-                    advertencia = "No se pudo consultar la base de datos para confirmar equipos ocupados; por seguridad no se muestra ningún equipo disponible hasta que la conexión se restablezca.",
-                    equipos = Array.Empty<object>()
-                });
-            }
 
             return Ok(disponibles);
         }

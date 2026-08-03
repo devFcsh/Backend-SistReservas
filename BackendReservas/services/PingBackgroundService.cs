@@ -61,7 +61,17 @@ namespace Backend_SistReservas.Services
                 {
                     // Un fallo en un ciclo (ej. la BD momentáneamente inaccesible)
                     // no debe tumbar el servicio; se reintenta en el próximo ciclo.
-                    _logger.LogError(ex, "Error durante el ciclo de ping a equipos.");
+                    if (!stoppingToken.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            _logger.LogError(ex, "Error durante el ciclo de ping a equipos.");
+                        }
+                        catch
+                        {
+                            // Ignorar fallos de logging durante el apagado del host.
+                        }
+                    }
                 }
 
                 try

@@ -4,10 +4,19 @@ using Backend_SistReservas.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.SingleLine = true;
+    options.TimestampFormat = "[HH:mm:ss] ";
+});
+builder.Logging.AddDebug();
+
 // ==========================================================================
 // 1. CONFIGURACIÓN DE CADENA DE CONEXIÓN (Local vs Producción)
 // ==========================================================================
-string? connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
 if (string.IsNullOrEmpty(connectionString))
 {
