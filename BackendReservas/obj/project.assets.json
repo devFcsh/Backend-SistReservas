@@ -1346,19 +1346,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Ayudante\\.nuget\\packages\\": {}
+    "C:\\Users\\Estudiante\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Ayudante\\Documents\\GitHub\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
+      "projectUniqueName": "C:\\Users\\Estudiante\\Pictures\\reserva-AyP\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
       "projectName": "BackendReservas",
-      "projectPath": "C:\\Users\\Ayudante\\Documents\\GitHub\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
-      "packagesPath": "C:\\Users\\Ayudante\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Ayudante\\Documents\\GitHub\\Backend-SistReservas\\BackendReservas\\obj\\",
+      "projectPath": "C:\\Users\\Estudiante\\Pictures\\reserva-AyP\\Backend-SistReservas\\BackendReservas\\BackendReservas.csproj",
+      "packagesPath": "C:\\Users\\Estudiante\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Estudiante\\Pictures\\reserva-AyP\\Backend-SistReservas\\BackendReservas\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Ayudante\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Estudiante\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -1420,7 +1420,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.316/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

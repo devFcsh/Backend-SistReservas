@@ -8,6 +8,7 @@ Antes de ejecutar el proyecto, asegúrese de tener instalado:
 React
 Node.js versión 18 o superior. (Probado con: Node v22 y Node v24)
 npm (incluido con Node.js)
+npm install chart.js react-chartjs-2 html2pdf.js
 ----Backend----
 ASP.NET
 .NET SDK 9.0
