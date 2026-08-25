@@ -24,17 +24,7 @@ if (string.IsNullOrEmpty(connectionString))
     connectionString = "Server=localhost;Database=control_laboratorio;Uid=root;Pwd=root;";
 }
 
-// Inyección de dependencias para Entity Framework Core con MySQL Pomelo.
-//
-// IMPORTANTE: en vez de ServerVersion.AutoDetect(connectionString) —que
-// abre una conexión real a MySQL solo para detectar la versión del
-// servidor, y lo hace en el momento en que el DbContext se construye para
-// CADA request, antes de que cualquier try/catch dentro de un controlador
-// pueda atraparlo— se fija una versión conocida de antemano. Así, construir
-// el DbContext nunca requiere una conexión viva; el error de conexión (si
-// las credenciales están mal, o MySQL no responde) solo aparece cuando se
-// ejecuta una consulta real, que es exactamente donde los controladores
-// (ver EquiposController) sí pueden atraparlo y responder con tolerancia.
+
 ServerVersion serverVersion;
 try
 {
@@ -42,11 +32,7 @@ try
 }
 catch
 {
-    // No se pudo conectar para detectar la versión (credenciales incorrectas,
-    // MySQL apagado, etc.). Se usa una versión razonable por defecto para
-    // que el backend arranque igual; los errores de conexión reales seguirán
-    // apareciendo al ejecutar consultas, pero ya no impiden que el backend
-    // inicie ni se cuelan "crudos" antes de los try/catch de los controladores.
+    
     serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
 }
 
@@ -78,8 +64,7 @@ builder.Services.Configure<LaboratorioOptions>(
 
 builder.Services.AddSingleton<PingService>();
 
-// Catálogo de equipos EN MEMORIA (sembrado desde "Laboratorio:Equipos").
-// No requiere ninguna tabla nueva en la base de datos.
+
 builder.Services.AddSingleton<EquiposCatalogoService>();
 
 // ==========================================================================
