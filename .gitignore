@@ -1,0 +1,27 @@
+# Compilación de .NET (se regeneran con dotnet restore / dotnet build)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+*.nupkg
+
+# Archivos de usuario de Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.rsuser
+
+# Configuración local con secretos (no subir contraseñas)
+appsettings.Local.json
+*.env
+.env
+
+# Logs y temporales
+*.log
+TestResults/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
