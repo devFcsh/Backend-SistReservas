@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend_SistReservas.Data;
@@ -16,6 +17,9 @@ namespace Backend_SistReservas.Controllers
         private readonly ApplicationDbContext _context;
         private readonly EquiposCatalogoService _catalogo;
         private static readonly KeyedAsyncLock Bloqueos = new();
+
+        // Matrícula genérica de las filas creadas por "En clase".
+        private const string MatriculaClase = "000000000";
 
         public ReservasController(ApplicationDbContext context, EquiposCatalogoService catalogo)
         {
@@ -138,28 +142,142 @@ namespace Backend_SistReservas.Controllers
         // ==========================================================================
         // GET: api/reporte -> Obtener el listado histórico detallado para tablas/Excel
         // ==========================================================================
+        // Incluye el "id" de cada fila: el frontend lo necesita para editar
+        // (PUT api/reservas/{id}) o eliminar (DELETE api/reservas/{id}).
         [HttpGet("reporte")]
         public async Task<IActionResult> ObtenerReporte()
         {
-            var reporte = await _context.Reservas
+            var reservas = await _context.Reservas.AsNoTracking()
                 .OrderByDescending(r => r.HoraInicio)
-                .Select(r => new {
-                    r.Nombre,
-                    r.Apellido,
-                    r.Matricula,
-                    r.Carrera,
-                    r.Equipo, 
-                    Fecha = r.HoraInicio.ToString("yyyy-MM-dd"),
-                    HoraInicio = r.HoraInicio.ToString("HH:mm:ss"),
-                    HoraSalida = r.HoraSalida.HasValue ? r.HoraSalida.Value.ToString("HH:mm:ss") : "En uso",
-                    TiempoPromedio = r.TiempoPromedio ?? "N/A",
-                    r.Periodo ,
-                    r.Año
-                })
                 .ToListAsync();
 
-            return Ok(reporte);
+            return Ok(reservas.Select(ProyectarFilaReporte));
         }
+
+        // ==========================================================================
+        // PUT: api/reservas/{id} -> editar una fila del panel de reservas
+        // (roles Admin y Laboratorio).
+        //
+        // Solo se pueden corregir los datos del alumno y el periodo. Equipo,
+        // horas y tiempo de uso los maneja el sistema y no se editan aquí.
+        // Los campos que no se envíen (null) se dejan como están.
+        // ==========================================================================
+        [HttpPut("reservas/{id}")]
+        public async Task<IActionResult> EditarReserva(int id, [FromBody] EditarReservaRequest request)
+        {
+            if (request == null)
+                return BadRequest(new { error = "Los datos enviados no son válidos." });
+
+            var reserva = await _context.Reservas.FirstOrDefaultAsync(r => r.Id == id);
+            if (reserva == null)
+                return NotFound(new { error = "Reserva no encontrada." });
+
+            bool esFilaDeClase = reserva.Matricula == MatriculaClase;
+
+            if (request.Matricula != null)
+            {
+                var nuevaMatricula = request.Matricula.Trim();
+
+                if (!ValidacionesHelper.EsMatriculaValida(nuevaMatricula))
+                    return BadRequest(new { error = "La matrícula debe contener exactamente 9 dígitos numéricos." });
+
+                if (nuevaMatricula != reserva.Matricula)
+                {
+                    // La matrícula genérica marca las filas creadas por "En clase";
+                    // cambiarla haría que "Finalizar clase" ya no las libere.
+                    if (esFilaDeClase || nuevaMatricula == MatriculaClase)
+                        return BadRequest(new { error = $"La matrícula {MatriculaClase} es reservada para las clases y no se puede asignar ni cambiar." });
+
+                    // Si la fila sigue en uso, la nueva matrícula no puede tener ya otra entrada activa.
+                    if (reserva.HoraSalida == null)
+                    {
+                        using var _lock = await Bloqueos.AcquireAsync($"matricula:{nuevaMatricula}");
+                        bool tieneOtraActiva = await _context.Reservas
+                            .AnyAsync(r => r.Id != id && r.Matricula == nuevaMatricula && r.HoraSalida == null);
+                        if (tieneOtraActiva)
+                            return BadRequest(new { error = "Esa matrícula ya tiene otra entrada activa en el laboratorio." });
+                    }
+
+                    reserva.Matricula = nuevaMatricula;
+                }
+            }
+
+            if (request.Nombre != null)
+            {
+                if (!ValidacionesHelper.EsNombreValido(request.Nombre))
+                    return BadRequest(new { error = "El nombre solo puede contener letras y espacios." });
+                reserva.Nombre = request.Nombre.Trim();
+            }
+
+            if (request.Apellido != null)
+            {
+                if (!ValidacionesHelper.EsNombreValido(request.Apellido))
+                    return BadRequest(new { error = "El apellido solo puede contener letras y espacios." });
+                reserva.Apellido = request.Apellido.Trim();
+            }
+
+            if (request.Carrera != null)
+            {
+                var carrera = request.Carrera.Trim();
+                if (carrera.Length == 0 || carrera.Length > 100)
+                    return BadRequest(new { error = "La carrera es requerida (máximo 100 caracteres)." });
+                reserva.Carrera = carrera;
+            }
+
+            if (request.Periodo != null)
+            {
+                var periodo = request.Periodo.Trim();
+                if (periodo.Length == 0 || periodo.Length > 10)
+                    return BadRequest(new { error = "El periodo es requerido (máximo 10 caracteres)." });
+                reserva.Periodo = periodo;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ProyectarFilaReporte(reserva));
+        }
+
+        // ==========================================================================
+        // DELETE: api/reservas/{id} -> eliminar una fila (SOLO Admin).
+        // Si la fila estaba en uso, el equipo queda libre de inmediato.
+        // ==========================================================================
+        [Authorize(Roles = Roles.Admin)]
+        [HttpDelete("reservas/{id}")]
+        public async Task<IActionResult> EliminarReserva(int id)
+        {
+            var reserva = await _context.Reservas.FirstOrDefaultAsync(r => r.Id == id);
+            if (reserva == null)
+                return NotFound(new { error = "Reserva no encontrada." });
+
+            bool estabaActiva = reserva.HoraSalida == null;
+
+            _context.Reservas.Remove(reserva);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = estabaActiva
+                    ? $"Reserva eliminada. El {reserva.Equipo} quedó libre."
+                    : "Reserva eliminada."
+            });
+        }
+
+        // Forma de cada fila del panel de reservas / Excel.
+        private static object ProyectarFilaReporte(Reserva r) => new
+        {
+            r.Id,
+            r.Nombre,
+            r.Apellido,
+            r.Matricula,
+            r.Carrera,
+            r.Equipo,
+            Fecha = r.HoraInicio.ToString("yyyy-MM-dd"),
+            HoraInicio = r.HoraInicio.ToString("HH:mm:ss"),
+            HoraSalida = r.HoraSalida.HasValue ? r.HoraSalida.Value.ToString("HH:mm:ss") : "En uso",
+            TiempoPromedio = r.TiempoPromedio ?? "N/A",
+            r.Periodo,
+            r.Año
+        };
 
         // ==========================================================================
         // GET: api/alumno/{matricula} -> Autocompletado/Historial por alumno
@@ -241,7 +359,7 @@ namespace Backend_SistReservas.Controllers
                 _context.Reservas.Add(new Reserva {
                     Nombre = "En Clase",
                     Apellido = "N/A",
-                    Matricula = "000000000",
+                    Matricula = MatriculaClase,
                     Carrera = $"Reservado por {request.Docente}",
                     Periodo = request.Periodo,
                     Equipo = equipo,
@@ -266,7 +384,7 @@ namespace Backend_SistReservas.Controllers
         {
             // Buscamos todas las reservas abiertas de la matrícula genérica "000000000"
             var reservasEnClase = await _context.Reservas
-                .Where(r => r.Matricula == "000000000" && r.HoraSalida == null)
+                .Where(r => r.Matricula == MatriculaClase && r.HoraSalida == null)
                 .ToListAsync();
 
 
@@ -304,6 +422,17 @@ namespace Backend_SistReservas.Controllers
 
 
 
+    }
+
+    // Datos editables de una fila de reservas (PUT api/reservas/{id}).
+    // Todos opcionales: lo que venga en null no se modifica.
+    public class EditarReservaRequest
+    {
+        public string? Matricula { get; set; }
+        public string? Nombre { get; set; }
+        public string? Apellido { get; set; }
+        public string? Carrera { get; set; }
+        public string? Periodo { get; set; }
     }
 
     // Objeto de transferencia de datos de salida para el tipado estricto de la petición PUT
