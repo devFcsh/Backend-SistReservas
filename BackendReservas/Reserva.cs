@@ -35,7 +35,7 @@ namespace Backend_SistReservas.Models
         public string Equipo { get; set; } = string.Empty;
         
         [Column("hora_inicio")]
-        public DateTime HoraInicio { get; set; } = DateTime.Now;
+        public DateTime HoraInicio { get; set; } // Lo asigna el backend con RelojLaboratorio
         
         [Column("hora_salida")]
         public DateTime? HoraSalida { get; set; }

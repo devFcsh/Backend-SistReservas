@@ -27,9 +27,11 @@ namespace Backend_SistReservas.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<Usuario> _hasher;
         private readonly TokenService _tokens;
+        private readonly RelojLaboratorio _reloj;
 
-        public AuthController(ApplicationDbContext context, IPasswordHasher<Usuario> hasher, TokenService tokens)
+        public AuthController(ApplicationDbContext context, IPasswordHasher<Usuario> hasher, TokenService tokens, RelojLaboratorio reloj)
         {
+            _reloj = reloj;
             _context = context;
             _hasher = hasher;
             _tokens = tokens;
@@ -72,7 +74,7 @@ namespace Backend_SistReservas.Controllers
             if (resultado == PasswordVerificationResult.SuccessRehashNeeded)
                 usuario.PasswordHash = _hasher.HashPassword(usuario, request.Password);
 
-            var sesion = new Sesion { UsuarioId = usuario.Id, CreadaEn = DateTime.Now };
+            var sesion = new Sesion { UsuarioId = usuario.Id, CreadaEn = _reloj.Ahora };
             _context.Sesiones.Add(sesion);
             await _context.SaveChangesAsync();
 
@@ -95,7 +97,7 @@ namespace Backend_SistReservas.Controllers
 
             if (sesion != null && sesion.CerradaEn == null)
             {
-                sesion.CerradaEn = DateTime.Now;
+                sesion.CerradaEn = _reloj.Ahora;
                 await _context.SaveChangesAsync();
             }
 
@@ -138,7 +140,7 @@ namespace Backend_SistReservas.Controllers
             }
 
             usuario.PasswordHash = _hasher.HashPassword(usuario, request.PasswordNueva);
-            await SesionesHelper.CerrarSesionesAsync(_context, usuario.Id, exceptoSesionId: User.ObtenerSesionId());
+            await SesionesHelper.CerrarSesionesAsync(_context, usuario.Id, _reloj.Ahora, exceptoSesionId: User.ObtenerSesionId());
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Contraseña actualizada." });

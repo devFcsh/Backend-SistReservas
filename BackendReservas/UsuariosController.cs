@@ -25,9 +25,11 @@ namespace Backend_SistReservas.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IPasswordHasher<Usuario> _hasher;
+        private readonly RelojLaboratorio _reloj;
 
-        public UsuariosController(ApplicationDbContext context, IPasswordHasher<Usuario> hasher)
+        public UsuariosController(ApplicationDbContext context, IPasswordHasher<Usuario> hasher, RelojLaboratorio reloj)
         {
+            _reloj = reloj;
             _context = context;
             _hasher = hasher;
         }
@@ -97,7 +99,7 @@ namespace Backend_SistReservas.Controllers
                 NombreUsuario = nombre,
                 Rol = request.Rol,
                 Activo = true,
-                CreadoEn = DateTime.Now
+                CreadoEn = _reloj.Ahora
             };
             usuario.PasswordHash = _hasher.HashPassword(usuario, request.Password);
 
@@ -143,7 +145,7 @@ namespace Backend_SistReservas.Controllers
             usuario.Activo = nuevoActivo;
 
             if (!nuevoActivo)
-                await SesionesHelper.CerrarSesionesAsync(_context, usuario.Id);
+                await SesionesHelper.CerrarSesionesAsync(_context, usuario.Id, _reloj.Ahora);
 
             await _context.SaveChangesAsync();
 
@@ -167,7 +169,7 @@ namespace Backend_SistReservas.Controllers
             usuario.PasswordHash = _hasher.HashPassword(usuario, request!.Password);
 
             // Si el admin cambia su propia contraseña por aquí, conserva su sesión actual.
-            await SesionesHelper.CerrarSesionesAsync(_context, usuario.Id, exceptoSesionId: User.ObtenerSesionId());
+            await SesionesHelper.CerrarSesionesAsync(_context, usuario.Id, _reloj.Ahora, exceptoSesionId: User.ObtenerSesionId());
             await _context.SaveChangesAsync();
 
             return Ok(new { message = $"Contraseña de '{usuario.NombreUsuario}' actualizada. Sus sesiones abiertas fueron cerradas." });
@@ -184,7 +186,7 @@ namespace Backend_SistReservas.Controllers
             if (usuario == null)
                 return NotFound(new { error = "Usuario no encontrado." });
 
-            int cerradas = await SesionesHelper.CerrarSesionesAsync(_context, id, exceptoSesionId: User.ObtenerSesionId());
+            int cerradas = await SesionesHelper.CerrarSesionesAsync(_context, id, _reloj.Ahora, exceptoSesionId: User.ObtenerSesionId());
             await _context.SaveChangesAsync();
 
             return Ok(new { message = $"Se cerraron {cerradas} sesión(es) de '{usuario.NombreUsuario}'." });

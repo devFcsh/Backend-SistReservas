@@ -149,6 +149,12 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<LaboratorioOptions>(
     builder.Configuration.GetSection(LaboratorioOptions.SeccionConfig));
 
+// Reloj único del sistema: hora real de Ecuador tomada de internet, sin
+// depender del reloj del servidor (ver Services/RelojLaboratorio.cs).
+builder.Services.AddSingleton<RelojLaboratorio>();
+builder.Services.AddSingleton<SincronizacionHoraService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SincronizacionHoraService>());
+
 builder.Services.AddSingleton<PingService>();
 
 
@@ -164,6 +170,9 @@ builder.Services.AddHostedService<PingBackgroundService>();
 builder.Services.AddHostedService<CierreAutomaticoBackgroundService>();
 
 var app = builder.Build();
+
+// Obtiene la hora real ANTES de atender peticiones o registrar nada.
+await app.Services.GetRequiredService<SincronizacionHoraService>().SincronizarAsync();
 
 // Crea las tablas `usuarios`/`sesiones` si no existen y el admin inicial.
 await AuthInicializador.EjecutarAsync(app.Services);

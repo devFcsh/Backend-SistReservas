@@ -32,6 +32,6 @@ namespace Backend_SistReservas.Models
         public bool Activo { get; set; } = true;
 
         [Column("creado_en")]
-        public DateTime CreadoEn { get; set; } = DateTime.Now;
+        public DateTime CreadoEn { get; set; }
     }
 }

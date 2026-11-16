@@ -20,9 +20,11 @@ namespace Backend_SistReservas.Services
         public const string ClaimSesion = "sid";
 
         private readonly AuthOptions _opciones;
+        private readonly RelojLaboratorio _reloj;
 
-        public TokenService(IOptions<AuthOptions> opciones)
+        public TokenService(IOptions<AuthOptions> opciones, RelojLaboratorio reloj)
         {
+            _reloj = reloj;
             _opciones = opciones.Value;
         }
 
@@ -47,7 +49,7 @@ namespace Backend_SistReservas.Services
                 Subject = new ClaimsIdentity(claims),
                 Issuer = _opciones.Issuer,
                 Audience = _opciones.Issuer,
-                IssuedAt = DateTime.UtcNow,
+                IssuedAt = _reloj.UtcAhora,
                 Expires = null, // Sin vencimiento: dura hasta cerrar sesión.
                 SigningCredentials = new SigningCredentials(
                     CrearClave(_opciones.JwtKey), SecurityAlgorithms.HmacSha256)

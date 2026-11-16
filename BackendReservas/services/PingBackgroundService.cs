@@ -32,14 +32,17 @@ namespace Backend_SistReservas.Services
         private readonly EquiposCatalogoService _catalogo;
         private readonly ILogger<PingBackgroundService> _logger;
         private readonly LaboratorioOptions _opciones;
+        private readonly RelojLaboratorio _reloj;
 
         public PingBackgroundService(
             IServiceScopeFactory scopeFactory,
             PingService pingService,
             EquiposCatalogoService catalogo,
             IOptions<LaboratorioOptions> opciones,
-            ILogger<PingBackgroundService> logger)
+            ILogger<PingBackgroundService> logger,
+            RelojLaboratorio reloj)
         {
+            _reloj = reloj;
             _scopeFactory = scopeFactory;
             _pingService = pingService;
             _catalogo = catalogo;
@@ -107,20 +110,20 @@ namespace Backend_SistReservas.Services
                 // inalcanzable, error) se trata como No disponible.
                 bool encendidoAhora = resultado.Estado == EstadoPing.Encendida;
 
-                _catalogo.ActualizarEstadoPing(equipo.Nombre, encendidoAhora, DateTime.Now);
+                _catalogo.ActualizarEstadoPing(equipo.Nombre, encendidoAhora, _reloj.Ahora);
 
                 // El equipo se apagó / dejó de responder mientras estaba en uso:
                 // cerrar automáticamente su reserva activa.
                 if (encendidoAnterior && !encendidoAhora)
                 {
-                    await CerrarReservaActivaSiExiste(context, equipo.Nombre, stoppingToken);
+                    await CerrarReservaActivaSiExiste(context, equipo.Nombre, _reloj.Ahora, stoppingToken);
                 }
             }
 
             await context.SaveChangesAsync(stoppingToken);
         }
 
-        private static async Task CerrarReservaActivaSiExiste(ApplicationDbContext context, string nombreEquipo, CancellationToken stoppingToken)
+        private static async Task CerrarReservaActivaSiExiste(ApplicationDbContext context, string nombreEquipo, DateTime ahora, CancellationToken stoppingToken)
         {
             var reservaActiva = await context.Reservas
                 .Where(r => r.Equipo == nombreEquipo && r.HoraSalida == null)
@@ -128,7 +131,6 @@ namespace Backend_SistReservas.Services
 
             if (reservaActiva == null) return;
 
-            var ahora = DateTime.Now;
             reservaActiva.HoraSalida = ahora;
             reservaActiva.TiempoPromedio = FormatearTiempo(reservaActiva.HoraInicio, ahora);
         }

@@ -21,6 +21,13 @@ namespace Backend_SistReservas.Services
         // Cada cuántos segundos se hace ping a los equipos con IP registrada.
         public int IntervaloPingSegundos { get; set; } = 45;
 
+        // Zona horaria del laboratorio (IANA). Toda hora del sistema se expresa
+        // en esta zona, sin importar la configuración del servidor.
+        public string ZonaHoraria { get; set; } = "America/Guayaquil";
+
+        // Cada cuántos minutos se vuelve a pedir la hora real a internet.
+        public int IntervaloSincronizacionHoraMinutos { get; set; } = 30;
+
         // Catálogo de equipos del laboratorio (nombre, IP, si está colocado).
         // Si se deja vacío, se generan por defecto "Equipo 1".."Equipo 46"
         // sin IP. Ver EquiposCatalogoService para el detalle de la siembra.

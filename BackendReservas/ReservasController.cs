@@ -16,15 +16,17 @@ namespace Backend_SistReservas.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly EquiposCatalogoService _catalogo;
+        private readonly RelojLaboratorio _reloj;
         private static readonly KeyedAsyncLock Bloqueos = new();
 
         // Matrícula genérica de las filas creadas por "En clase".
         private const string MatriculaClase = "000000000";
 
-        public ReservasController(ApplicationDbContext context, EquiposCatalogoService catalogo)
+        public ReservasController(ApplicationDbContext context, EquiposCatalogoService catalogo, RelojLaboratorio reloj)
         {
             _context = context;
             _catalogo = catalogo;
+            _reloj = reloj;
         }
 
         // ==========================================================================
@@ -96,10 +98,11 @@ namespace Backend_SistReservas.Controllers
 
             // Sanitización e inicialización segura en el servidor
             entrada.Laboratorio = "L002";
-            entrada.HoraInicio = DateTime.Now;
+            var ahora = _reloj.Ahora;
+            entrada.HoraInicio = ahora;
             entrada.HoraSalida = null;
             entrada.TiempoPromedio = null;
-            entrada.Año = DateTime.Now.Year;
+            entrada.Año = ahora.Year;
 
             _context.Reservas.Add(entrada);
             await _context.SaveChangesAsync();
@@ -127,7 +130,7 @@ namespace Backend_SistReservas.Controllers
                 return BadRequest(new { message = "No se encontró una entrada activa para esta matrícula." });
             }
 
-            DateTime horaActual = DateTime.Now;
+            DateTime horaActual = _reloj.Ahora;
             ultimaReserva.HoraSalida = horaActual;
             
             // Uso del método privado
@@ -354,6 +357,7 @@ namespace Backend_SistReservas.Controllers
             var disponibles = todosLosEquiposReservables.Except(ocupados);
 
             // Registrar entrada "En Clase" para cada disponible
+            var inicioClase = _reloj.Ahora;
             foreach (var equipo in disponibles)
             {
                 _context.Reservas.Add(new Reserva {
@@ -364,9 +368,9 @@ namespace Backend_SistReservas.Controllers
                     Periodo = request.Periodo,
                     Equipo = equipo,
                     Laboratorio = "L002",
-                    HoraInicio = DateTime.Now,
+                    HoraInicio = inicioClase,
                     HoraSalida = null,
-                    Año = DateTime.Now.Year,
+                    Año = inicioClase.Year,
 
                 });
             }
@@ -388,7 +392,7 @@ namespace Backend_SistReservas.Controllers
                 .ToListAsync();
 
 
-            DateTime horaActual = DateTime.Now;
+            DateTime horaActual = _reloj.Ahora;
 
 
             foreach (var r in reservasEnClase)

@@ -19,9 +19,11 @@ namespace Backend_SistReservas.Controllers
         private readonly ApplicationDbContext _context;
         private readonly EquiposCatalogoService _catalogo;
         private readonly ILogger<EquiposController> _logger;
+        private readonly RelojLaboratorio _reloj;
 
-        public EquiposController(ApplicationDbContext context, EquiposCatalogoService catalogo, ILogger<EquiposController> logger)
+        public EquiposController(ApplicationDbContext context, EquiposCatalogoService catalogo, ILogger<EquiposController> logger, RelojLaboratorio reloj)
         {
+            _reloj = reloj;
             _context = context;
             _catalogo = catalogo;
             _logger = logger;
@@ -249,7 +251,7 @@ namespace Backend_SistReservas.Controllers
 
             if (activa == null) return;
 
-            var ahora = DateTime.Now;
+            var ahora = _reloj.Ahora;
             activa.HoraSalida = ahora;
             activa.TiempoPromedio = FormatearTiempo(activa.HoraInicio, ahora);
             await _context.SaveChangesAsync();

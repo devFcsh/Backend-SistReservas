@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS sesiones (
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var opciones = scope.ServiceProvider.GetRequiredService<IOptions<AuthOptions>>().Value;
                 var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Usuario>>();
+                var reloj = scope.ServiceProvider.GetRequiredService<RelojLaboratorio>();
 
                 await context.Database.ExecuteSqlRawAsync(SqlCrearUsuarios);
                 await context.Database.ExecuteSqlRawAsync(SqlCrearSesiones);
@@ -79,7 +80,7 @@ CREATE TABLE IF NOT EXISTS sesiones (
                     NombreUsuario = datos.Usuario.Trim(),
                     Rol = Roles.Admin,
                     Activo = true,
-                    CreadoEn = DateTime.Now
+                    CreadoEn = reloj.Ahora
                 };
                 admin.PasswordHash = hasher.HashPassword(admin, datos.Password);
 

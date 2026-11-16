@@ -23,7 +23,7 @@ namespace Backend_SistReservas.Models
         public int UsuarioId { get; set; }
 
         [Column("creada_en")]
-        public DateTime CreadaEn { get; set; } = DateTime.Now;
+        public DateTime CreadaEn { get; set; }
 
         [Column("cerrada_en")]
         public DateTime? CerradaEn { get; set; }

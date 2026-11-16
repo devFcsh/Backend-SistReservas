@@ -39,13 +39,16 @@ namespace Backend_SistReservas.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<CierreAutomaticoBackgroundService> _logger;
         private readonly LaboratorioOptions _opciones;
+        private readonly RelojLaboratorio _reloj;
         private DateTime? _ultimaFechaEjecutada;
 
         public CierreAutomaticoBackgroundService(
             IServiceScopeFactory scopeFactory,
             IOptions<LaboratorioOptions> opciones,
-            ILogger<CierreAutomaticoBackgroundService> logger)
+            ILogger<CierreAutomaticoBackgroundService> logger,
+            RelojLaboratorio reloj)
         {
+            _reloj = reloj;
             _scopeFactory = scopeFactory;
             _opciones = opciones.Value;
             _logger = logger;
@@ -88,7 +91,7 @@ namespace Backend_SistReservas.Services
 
         private async Task VerificarYCerrarSiCorrespondeAsync(TimeSpan horaCierre, CancellationToken stoppingToken)
         {
-            var ahora = DateTime.Now;
+            var ahora = _reloj.Ahora;
 
             // Todavía no llega la hora de cierre de hoy.
             if (ahora.TimeOfDay < horaCierre) return;
