@@ -35,17 +35,28 @@ SELECT * FROM reservas;
 SET SQL_SAFE_UPDATES = 1;
 
 
+-- ==========================================================================
+-- AUTENTICACIÓN DEL PERSONAL
+-- El backend crea estas tablas automáticamente al arrancar si no existen
+-- (Services/AuthInicializador.cs). Se dejan aquí como referencia.
+-- ==========================================================================
+USE control_laboratorio;
 
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    rol VARCHAR(20) NOT NULL,              -- 'Admin' o 'Laboratorio'
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
-
-
-
-
-
-
-
-
-
-
-
-
+CREATE TABLE IF NOT EXISTS sesiones (
+    id CHAR(36) PRIMARY KEY,               -- GUID; viaja dentro del token
+    usuario_id INT NOT NULL,
+    creada_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    cerrada_en DATETIME NULL,              -- NULL = sesión abierta
+    INDEX idx_sesiones_usuario (usuario_id),
+    CONSTRAINT fk_sesiones_usuario FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id) ON DELETE CASCADE
+);

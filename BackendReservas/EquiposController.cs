@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -102,6 +103,7 @@ namespace Backend_SistReservas.Controllers
             public bool Activo { get; set; } = true;
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPost("equipos")]
         public IActionResult CrearEquipo([FromBody] CrearEquipoRequest request)
         {
@@ -123,6 +125,7 @@ namespace Backend_SistReservas.Controllers
             public bool Activo { get; set; }
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPut("equipos/{id}/activo")]
         public async Task<IActionResult> ActualizarActivo(int id, [FromBody] ActivoRequest request)
         {
@@ -148,6 +151,7 @@ namespace Backend_SistReservas.Controllers
             public string? Ip { get; set; }
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPut("equipos/{id}/ip")]
         public async Task<IActionResult> ActualizarIp(int id, [FromBody] IpRequest request)
         {
@@ -172,6 +176,7 @@ namespace Backend_SistReservas.Controllers
             public bool Encendido { get; set; }
         }
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPut("equipos/{id}/encendido")]
         public async Task<IActionResult> ActualizarEncendido(int id, [FromBody] EncendidoRequest request)
         {
@@ -189,6 +194,7 @@ namespace Backend_SistReservas.Controllers
         // ==========================================================================
         // DELETE: api/equipos/{id} -> eliminar del catálogo (en memoria)
         // ==========================================================================
+        [Authorize(Roles = Roles.Admin)]
         [HttpDelete("equipos/{id}")]
         public async Task<IActionResult> EliminarEquipo(int id)
         {
