@@ -60,8 +60,9 @@ builder.Services.AddCors(options =>
 
 // ==========================================================================
 // 3. AUTENTICACIÓN (JWT) Y PERMISOS POR ROL
-//    - El token no vence por tiempo: vale mientras su sesión esté abierta en
-//      la tabla `sesiones`. Se verifica en CADA petición (OnTokenValidated).
+//    - El token vale mientras su sesión esté abierta en la tabla `sesiones`
+//      Y no hayan pasado Auth:DuracionSesionHoras (8 h) desde el login.
+//      Se verifica en CADA petición (OnTokenValidated) con el RelojLaboratorio.
 //    - Por defecto TODO endpoint exige sesión iniciada con rol Admin o
 //      Laboratorio. Los que son solo de Admin llevan [Authorize(Roles = Roles.Admin)].
 //      El único público es POST api/auth/login ([AllowAnonymous]).
@@ -90,8 +91,10 @@ builder.Services
             ValidAudience = authOpciones.Issuer,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = TokenService.CrearClave(authOpciones.JwtKey),
-            ValidateLifetime = false,       // Sin vencimiento por tiempo...
-            RequireExpirationTime = false,  // ...la validez la decide la sesión.
+            // El vencimiento NO se valida aquí porque usaría el reloj del
+            // servidor; se valida en OnTokenValidated con el RelojLaboratorio.
+            ValidateLifetime = false,
+            RequireExpirationTime = false,
         };
 
         options.Events = new JwtBearerEvents
@@ -105,16 +108,30 @@ builder.Services
                 }
 
                 var db = ctx.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-                var usuario = await db.Sesiones.AsNoTracking()
-                    .Where(s => s.Id == sesionId && s.CerradaEn == null && s.Usuario!.Activo)
-                    .Select(s => s.Usuario!)
-                    .FirstOrDefaultAsync(ctx.HttpContext.RequestAborted);
+                var reloj = ctx.HttpContext.RequestServices.GetRequiredService<RelojLaboratorio>();
+                var ahora = reloj.Ahora;
 
-                if (usuario == null)
+                var sesion = await db.Sesiones
+                    .Include(s => s.Usuario)
+                    .FirstOrDefaultAsync(s => s.Id == sesionId && s.CerradaEn == null && s.Usuario!.Activo,
+                        ctx.HttpContext.RequestAborted);
+
+                if (sesion == null)
                 {
                     ctx.Fail("La sesión fue cerrada o el usuario está desactivado.");
                     return;
                 }
+
+                // Vencida por tiempo: se marca como cerrada para que quede registro.
+                if (ahora - sesion.CreadaEn >= authOpciones.DuracionSesion)
+                {
+                    sesion.CerradaEn = sesion.CreadaEn + authOpciones.DuracionSesion;
+                    await db.SaveChangesAsync(ctx.HttpContext.RequestAborted);
+                    ctx.Fail("La sesión expiró. Inicie sesión nuevamente.");
+                    return;
+                }
+
+                var usuario = sesion.Usuario!;
 
                 // Rol y nombre SIEMPRE desde la base (si el admin cambia el
                 // rol de alguien, aplica desde su siguiente petición).

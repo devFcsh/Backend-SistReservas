@@ -11,9 +11,11 @@ namespace Backend_SistReservas.Services
     // Genera el token JWT que el frontend envía en cada petición
     // (encabezado "Authorization: Bearer <token>").
     //
-    // El token NO tiene fecha de vencimiento: su validez depende de que la
-    // sesión (claim "sid") siga abierta en la tabla `sesiones`. Eso se revisa
-    // en cada petición (ver OnTokenValidated en Program.cs).
+    // El token dura Auth:DuracionSesionHoras (8 h por defecto) desde el login
+    // y además su sesión (claim "sid") debe seguir abierta en la tabla
+    // `sesiones`. Ambas cosas se revisan en cada petición (ver
+    // OnTokenValidated en Program.cs) usando el RelojLaboratorio, no el reloj
+    // del servidor. El "exp" del token es informativo para el frontend.
     // ==========================================================================
     public class TokenService
     {
@@ -44,13 +46,14 @@ namespace Backend_SistReservas.Services
                 new Claim("role", usuario.Rol),
             };
 
+            var ahoraUtc = _reloj.UtcAhora;
             var descriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
                 Issuer = _opciones.Issuer,
                 Audience = _opciones.Issuer,
-                IssuedAt = _reloj.UtcAhora,
-                Expires = null, // Sin vencimiento: dura hasta cerrar sesión.
+                IssuedAt = ahoraUtc,
+                Expires = ahoraUtc + _opciones.DuracionSesion,
                 SigningCredentials = new SigningCredentials(
                     CrearClave(_opciones.JwtKey), SecurityAlgorithms.HmacSha256)
             };

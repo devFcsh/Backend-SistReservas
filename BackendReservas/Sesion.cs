@@ -5,9 +5,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Backend_SistReservas.Models
 {
     // ==========================================================================
-    // Sesión iniciada por un usuario. El token JWT no vence por tiempo: es
-    // válido mientras su sesión esté abierta (CerradaEn == null). Al cerrar
-    // sesión, o si el admin desactiva/elimina al usuario, la sesión se cierra
+    // Sesión iniciada por un usuario. El token JWT es válido mientras su
+    // sesión esté abierta (CerradaEn == null) y no hayan pasado
+    // Auth:DuracionSesionHoras (8 h) desde CreadaEn. Al cerrar sesión, al
+    // vencer, o si el admin desactiva/elimina al usuario, la sesión se cierra
     // y el token deja de funcionar de inmediato.
     // ==========================================================================
     [Table("sesiones")]

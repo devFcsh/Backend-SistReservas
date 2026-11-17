@@ -19,6 +19,12 @@ namespace Backend_SistReservas.Services
 
         public string Issuer { get; set; } = "BackendReservas";
 
+        // Horas que dura una sesión desde el login. Pasado ese tiempo el
+        // token deja de funcionar y hay que volver a iniciar sesión.
+        public double DuracionSesionHoras { get; set; } = 8;
+
+        public TimeSpan DuracionSesion => TimeSpan.FromHours(DuracionSesionHoras > 0 ? DuracionSesionHoras : 8);
+
         // Solo se usa si NO existe ningún admin en la tabla `usuarios`.
         public AdminInicialOptions AdminInicial { get; set; } = new();
     }
